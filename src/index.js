@@ -8,11 +8,12 @@ dotenv.config({path: "./.env"})
 const port = process.env.PORT || 4000;
 
 
-app.get((req, res)=> {
+app.get("/me", (req, res) => {
     res.status(200).json({
-        message: "This is e-commerence App"
-    })
-})
+        message: "This is an e-commerce app"
+    });
+});
+
 
 
 //  Database Connection
