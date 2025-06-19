@@ -19,8 +19,13 @@ app.use(
   }),
 );    
 
-
 app.use(cookieParser());  // req  cookies from body + url
 app.use(express.static("public"));
+
+import userRouter from "./routes/user.routes";
+app.use("api/v1/users", userRouter)
+
+
+
 
 export {app};
