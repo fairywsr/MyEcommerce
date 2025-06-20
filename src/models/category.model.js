@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
+import { avilableEnumCategory, enumCategory } from "../constants";
 
 const categorySchema = new mongoose.Schema({
       category:{
         type: String,
-        enum: ["winter", "summer"],
+        enum: enumCategory,
+        default: avilableEnumCategory.SUMMER,
         required: true
       },
       slug:{

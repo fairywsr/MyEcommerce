@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { AvailableUserRoleEnum, userRoleEnum } from "../constants";
 
 const adminSchema = new mongoose.Schema({
    admin:{
@@ -7,7 +8,8 @@ const adminSchema = new mongoose.Schema({
    },
    permissions:{
     type: String,
-    enum: ["Admin"]
+    enum: userRoleEnum,
+    default: AvailableUserRoleEnum.USER,
    }
 }, {timestamps: true})
 
