@@ -56,7 +56,7 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, createdUser, "user Successfully created"));
 });
 
-const loginUser = asyncHandler(async (req, res) => {
+const logInUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -87,11 +87,45 @@ const loginUser = asyncHandler(async (req, res) => {
     secure: true,
   };
 
-  res
+   return res
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
     .json(new ApiResponse(200, loginUser, "User find successfully"));
 });
 
-export { registerUser, loginUser };
+ const logOutUser = asyncHandler(async (req, res) => {
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set: {
+                refreshToken: "", // Using null instead of undefined
+            }
+        },
+        {
+            new: true,
+        }
+    );
+
+    console.log(req.user._id); 
+
+    const options = {
+        httpOnly: true,
+        secure: true,
+    }
+
+    res.status(200)
+        .clearCookie("refreshToken", options) 
+        .clearCookie("accessToken", options)
+        .json(new ApiResponse(
+            200, 
+            {}, 
+            "User logged out successfully"
+        ));
+});
+
+const forgetPassword = asyncHandler( async(req, res) => {
+
+})
+
+export { registerUser, logInUser, logOutUser, forgetPassword };
