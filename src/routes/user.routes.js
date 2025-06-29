@@ -1,7 +1,7 @@
 import Router from "express";
 import {logInUser, logOutUser, registerUser, refreshAccessToken, forgetPassword} from "../controllers/user.controllers.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { getUser, UpdateprofileSettings } from "../controllers/profile.controller.js";
+import { changePassword, getUser, myOrders, UpdateprofileSettings } from "../controllers/profile.controller.js";
 const router = Router();
 
 
@@ -11,9 +11,10 @@ router.route("/logout").get(verifyJWT, logOutUser)
 router.route("/refresh-token").post(refreshAccessToken);
 router.route("/passwordReset").post(forgetPassword);  // untested route and controller 
 
-// profile routes 
+// user profile routes 
 router.route("/profile").post(verifyJWT, getUser)
 router.route("/profile/settings").post(verifyJWT, UpdateprofileSettings)
-
+router.route("/profile/myOrders").post(verifyJWT, myOrders)
+router.route("/profile/changePassword").post(verifyJWT, changePassword)
 
 export default router;

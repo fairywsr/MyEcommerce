@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { enumPaymentStatus, availableEnumPaymentStatus, enumOrderStatus, availableOrderStatus } from "../constants";
+import { enumPaymentStatus, availableEnumPaymentStatus, enumOrderStatus, availableOrderStatus } from "../constants.js";
 
 const orderSchema = new mongoose.Schema(
   {
