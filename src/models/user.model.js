@@ -1,12 +1,16 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-
+import { userRoleEnum } from "../constants.js";
 
 const userSchema = new mongoose.Schema({
     email:{
         type: String,
         required: true,
+        unique: true,
+    },
+    alternateEmail:{
+        type: String,
         unique: true,
     },
     password:{
@@ -18,17 +22,25 @@ const userSchema = new mongoose.Schema({
     },
     role:{
         type: String,
-        enum: ["admin", "user"],
-        default: "user"
+        enum: userRoleEnum,
+        default: userRoleEnum.USER,
     },
     phone:{
         type: String,
         unique: true,
         required: true
     },
+    alternatePhone:{
+        type: String,
+        unique: true,
+    },
     refreshToken:{
       type: String,
     },
+    resetPasswordToken:{
+     type: String,
+    },
+
     address:{
         type: mongoose.Schema.Types.ObjectId,
         ref: "Address"
@@ -76,5 +88,9 @@ userSchema.methods.generateRefreshToken = function () {
     },
   );
 };
+// userSchema.methods.generatePasswordResetToken = function () {
+//     const token = crypto.randomBytes(32).toString("hex");
+//     next();
+// };
 
 export const User = mongoose.model("User", userSchema)

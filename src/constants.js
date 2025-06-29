@@ -1,4 +1,4 @@
-export const db_Name = "MyECommerence";   // db name
+export const db_Name = "MyECommerce";   // db name
 
 // enum user roles  
 export const userRoleEnum = {

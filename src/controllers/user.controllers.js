@@ -1,7 +1,9 @@
 import { User } from "../models/user.model.js";
-import { asyncHandler } from "../utils/AsyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js"; 
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
+import { sendMail } from "../utils/mail.js";
 
 const generateAccessTokenAndRefreshToken = async (userId) => {
   try {
@@ -87,45 +89,136 @@ const logInUser = asyncHandler(async (req, res) => {
     secure: true,
   };
 
-   return res
+  return res
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
-    .json(new ApiResponse(200, loginUser, "User find successfully"));
+    .json(new ApiResponse(200, loginUser, "User login successfully"));
 });
 
- const logOutUser = asyncHandler(async (req, res) => {
-    await User.findByIdAndUpdate(
-        req.user._id,
-        {
-            $set: {
-                refreshToken: "", // Using null instead of undefined
-            }
-        },
-        {
-            new: true,
-        }
+const logOutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: "", // Using null instead of undefined
+      },
+    },
+    {
+      new: true,
+    },
+  );
+
+  console.log(req.user._id);
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  res
+    .status(200)
+    .clearCookie("refreshToken", options)
+    .clearCookie("accessToken", options)
+    .json(new ApiResponse(200, {}, "User logged out successfully"));
+});
+
+const refreshAccessToken = asyncHandler(async (req, res) => {
+  const inCommingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+ 
+  if (!inCommingRefreshToken) {
+    throw new ApiError(401, "UnAuthorized Request");
+  }
+
+  try {
+    const decodedToken = jwt.verify(
+      inCommingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET,
     );
+   console.log(decodedToken);
+    const user = await User.findById(decodedToken?.id);
 
-    console.log(req.user._id); 
-
-    const options = {
-        httpOnly: true,
-        secure: true,
+    if (!user) {
+      throw new ApiError(401, "invalid refresh Token");
     }
 
-    res.status(200)
-        .clearCookie("refreshToken", options) 
-        .clearCookie("accessToken", options)
-        .json(new ApiResponse(
-            200, 
-            {}, 
-            "User logged out successfully"
-        ));
+    if (inCommingRefreshToken !== user?.refreshToken) {
+      throw new ApiError(401, "refresh token is expired or used");
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const { accessToken, refreshToken } =
+      await generateAccessTokenAndRefreshToken(user.id);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new ApiResponse(
+          200,
+          { accessToken, refreshToken },
+          "Accress Token refreshed",
+        ),
+      );
+  } catch (error) {
+    throw new ApiError(401, error?.message || "invalid RefreshToken");
+  }
 });
 
-const forgetPassword = asyncHandler( async(req, res) => {
+const forgetPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
 
-})
+  const user = await User.findOne({ email }); 
 
-export { registerUser, logInUser, logOutUser, forgetPassword };
+  if (!user) {
+    throw new ApiError(400, "Incorrect Email");
+  }
+
+
+  const resetPasswordToken = user.generatePasswordResetToken(); 
+  await user.save({ validateBeforeSave: false });
+
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetPasswordToken}`;
+
+  
+  const mailOptions = {
+    email,
+    subject: "Reset your password",
+    mailGenContent: forgetPasswordMailGenContent(user.name, resetUrl),
+  };
+
+ 
+  try {
+    await sendMail(mailOptions);
+    res.status(200).json({
+      success: true,
+      message: `Reset password email sent to ${email}`,
+    });
+  } catch (error) {
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    throw new ApiError(500, "Email could not be sent");
+  }
+
+  return res.status(500).json(
+    new ApiResponse(500, {}, "Password reset successfully")
+  )
+});
+
+
+
+export {
+  registerUser,
+  logInUser,
+  logOutUser,
+  forgetPassword,
+  refreshAccessToken,
+};
